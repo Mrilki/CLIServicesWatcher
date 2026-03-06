@@ -1,0 +1,11 @@
+# Go
+*.exe
+*.test
+*.out
+vendor/
+
+.idea/
+
+report.json
+
+*.local.json
