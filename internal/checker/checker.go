@@ -1,6 +1,9 @@
 package checker
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -12,14 +15,14 @@ type Checker interface {
 }
 
 type HTTPChecker struct {
-	Client *http.Client
+	Client        *http.Client
+	GlobalTimeout time.Duration
 }
 
-func NewHttpChecker(timeout time.Duration) *HTTPChecker {
+func NewHttpChecker(GlobalTimeout time.Duration) *HTTPChecker {
 	return &HTTPChecker{
-		Client: &http.Client{
-			Timeout: timeout,
-		},
+		Client:        &http.Client{},
+		GlobalTimeout: GlobalTimeout,
 	}
 }
 
@@ -30,9 +33,22 @@ func (c *HTTPChecker) Check(target models.Target) models.Result {
 		Success: false,
 	}
 
-	start := time.Now()
+	timeout := target.GetTimeoutDuration(c.GlobalTimeout)
 
-	resp, err := c.Client.Get(target.URL)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	fmt.Println(timeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", target.URL, nil)
+	if err != nil {
+		result.Error = fmt.Sprintf("failed to create request: %v", err)
+		result.Success = false
+		result.Latency = time.Duration(0)
+		return result
+	}
+
+	start := time.Now()
+	resp, err := c.Client.Do(req)
 	latency := time.Since(start)
 	result.Latency = latency
 
@@ -41,7 +57,12 @@ func (c *HTTPChecker) Check(target models.Target) models.Result {
 	}
 
 	if err != nil {
-		result.Error = err.Error()
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			result.Error = fmt.Sprintf("timeout after %d seconds", timeout)
+		} else {
+			result.Error = err.Error()
+		}
+
 	} else {
 		result.StatusCode = resp.StatusCode
 		if resp.StatusCode >= 200 && resp.StatusCode <= 299 {

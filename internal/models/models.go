@@ -7,8 +7,16 @@ import (
 )
 
 type Target struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
+	Name    string `json:"name"`
+	URL     string `json:"url"`
+	Timeout *int   `json:"timeout,omitempty"`
+}
+
+func (target *Target) GetTimeoutDuration(globalTimeout time.Duration) time.Duration {
+	if target.Timeout == nil {
+		return globalTimeout
+	}
+	return time.Duration(*target.Timeout) * time.Second
 }
 
 type Result struct {

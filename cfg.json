@@ -2,15 +2,18 @@
   "targets" : [
     {
       "name": "Google",
-      "url": "https://google.com"
+      "url": "https://google.com",
+      "timeout": 1
     },
     {
       "name": "GitHub",
-      "url": "https://github.com"
+      "url": "https://github.com",
+      "timeout": 1
     },
     {
       "name": "NonExistent",
-      "url": "http://this-site-does-not-exist.com"
+      "url": "http://this-site-does-not-exist.com",
+      "timeout": 11
     }
   ],
   "timeout" : 10

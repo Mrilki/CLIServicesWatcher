@@ -17,7 +17,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not load config: %v\n", err)
 	}
-	fmt.Printf("Timeout seconds: %d\n", cfg.Timeout)
+	fmt.Printf("Default timeout seconds: %d\n", cfg.Timeout)
 
 	var monitor checker.Checker
 	monitor = checker.NewHttpChecker(cfg.GetTimeoutDuration())
