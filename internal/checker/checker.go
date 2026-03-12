@@ -42,13 +42,13 @@ func (c *HTTPChecker) Check(target models.Target) models.Result {
 	if err != nil {
 		result.Error = fmt.Sprintf("failed to create request: %v", err)
 		result.Success = false
-		result.Latency = time.Duration(0)
+		result.Latency = models.Duration(0)
 		return result
 	}
 	start := time.Now()
 	resp, err := c.Client.Do(req)
 	latency := time.Since(start)
-	result.Latency = latency
+	result.Latency = models.Duration(latency)
 
 	if resp != nil {
 		defer resp.Body.Close()
@@ -56,7 +56,7 @@ func (c *HTTPChecker) Check(target models.Target) models.Result {
 
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			result.Error = fmt.Sprintf("timeout after %d seconds", timeout)
+			result.Error = fmt.Sprintf("timeout after %v seconds", timeout)
 		} else {
 			result.Error = err.Error()
 		}

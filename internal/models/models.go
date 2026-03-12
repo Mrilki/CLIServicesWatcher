@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -20,17 +21,40 @@ func (target *Target) GetTimeoutDuration(globalTimeout time.Duration) time.Durat
 }
 
 type Result struct {
-	Name       string        `json:"name"`
-	URL        string        `json:"url"`
-	StatusCode int           `json:"status_code"`
-	Latency    time.Duration `json:"latency"`
-	Error      string        `json:"error,omitempty"`
-	Success    bool          `json:"success"`
+	Name       string   `json:"name"`
+	URL        string   `json:"url"`
+	StatusCode int      `json:"status_code"`
+	Latency    Duration `json:"latency"`
+	Error      string   `json:"error,omitempty"`
+	Success    bool     `json:"success"`
 }
 
 type Config struct {
 	Targets []Target `json:"targets"`
 	Timeout int      `json:"timeout"`
+}
+
+type Duration time.Duration
+
+func (d Duration) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + time.Duration(d).String() + `"`), nil
+}
+
+func (d *Duration) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	dur, err := time.ParseDuration(s)
+	if err != nil {
+		return err
+	}
+	*d = Duration(dur)
+	return nil
+}
+
+func (d Duration) String() string {
+	return time.Duration(d).String()
 }
 
 func (conf *Config) GetTimeoutDuration() time.Duration {

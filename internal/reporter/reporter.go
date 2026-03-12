@@ -20,7 +20,7 @@ type Report struct {
 
 func SaveToJSON(results []models.Result, fileName string) error {
 	successCount := 0
-	var totalLatency time.Duration
+	var totalLatency models.Duration
 
 	for _, result := range results {
 		if result.Success {
