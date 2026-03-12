@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -18,14 +19,20 @@ type Pool struct {
 	checker      checker.Checker
 	mux          sync.Mutex
 	wg           sync.WaitGroup
+	ctx          context.Context
 }
 
-func NewPool(WorkersCount int, checker checker.Checker) *Pool {
+func NewPool(workersCount int, checker checker.Checker) *Pool {
 	return &Pool{
-		workersCount: WorkersCount,
+		workersCount: workersCount,
 		result:       make([]models.Result, 0),
 		checker:      checker,
+		ctx:          context.Background(),
 	}
+}
+
+func (p *Pool) SetContext(ctx context.Context) {
+	p.ctx = ctx
 }
 
 func (p *Pool) Run(tasks <-chan Task) {
@@ -40,6 +47,12 @@ func (p *Pool) worker(id int, tasks <-chan Task) {
 	defer p.wg.Done()
 
 	for task := range tasks {
+		select {
+		case <-p.ctx.Done():
+			return
+		default:
+
+		}
 		res := p.checker.Check(task.Target)
 
 		p.mux.Lock()

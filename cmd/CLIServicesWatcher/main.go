@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/Mrilki/CLIServicesWatcher/internal/checker"
 	"github.com/Mrilki/CLIServicesWatcher/internal/config"
@@ -12,6 +16,19 @@ import (
 
 func main() {
 	fmt.Println("Starting...")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		fmt.Println("\n Interrupt signal received. Shutting down gracefully...")
+		cancel()
+	}()
+
 	fmt.Println("Loading config...")
 	cfg, err := config.Load("cfg.json")
 	if err != nil {
@@ -27,11 +44,19 @@ func main() {
 		workersCount = 10
 	}
 	workersPool := worker.NewPool(workersCount, monitor)
+	workersPool.SetContext(ctx)
 
 	tasksChan := make(chan worker.Task, len(cfg.Targets))
 
 	go func() {
 		for _, target := range cfg.Targets {
+			select {
+			case <-ctx.Done():
+				fmt.Println("Stopped queuing new tasks.")
+				close(tasksChan)
+				return
+			default:
+			}
 			tasksChan <- worker.Task{Target: target}
 		}
 		close(tasksChan)
@@ -41,9 +66,13 @@ func main() {
 
 	results := workersPool.GetResults()
 
-	if err := reporter.SaveToJSON(results, "report.json"); err != nil {
-		log.Fatalf("Could not save results: %v\n", err)
+	if len(results) > 0 {
+		if err := reporter.SaveToJSON(results, "report.json"); err != nil {
+			log.Fatalf("Could not save results: %v\n", err)
+		}
+		reporter.PrintStats(results)
+	} else {
+		fmt.Println("No results saved.")
 	}
-	reporter.PrintStats(results)
 
 }

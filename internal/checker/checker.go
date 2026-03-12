@@ -36,7 +36,6 @@ func (c *HTTPChecker) Check(target models.Target) models.Result {
 	timeout := target.GetTimeoutDuration(c.GlobalTimeout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	fmt.Println(timeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", target.URL, nil)
@@ -46,7 +45,6 @@ func (c *HTTPChecker) Check(target models.Target) models.Result {
 		result.Latency = time.Duration(0)
 		return result
 	}
-
 	start := time.Now()
 	resp, err := c.Client.Do(req)
 	latency := time.Since(start)
