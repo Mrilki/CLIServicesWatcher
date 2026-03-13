@@ -29,6 +29,10 @@ type Result struct {
 	Success    bool     `json:"success"`
 }
 
+func (result *Result) SetLatency(duration time.Duration) {
+	result.Latency = Duration(duration)
+}
+
 type Config struct {
 	Targets []Target `json:"targets"`
 	Timeout int      `json:"timeout"`

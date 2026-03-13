@@ -53,7 +53,7 @@ func (p *Pool) worker(id int, tasks <-chan Task) {
 		default:
 
 		}
-		res := p.checker.Check(task.Target)
+		res := p.checker.Check(p.ctx, task.Target)
 
 		p.mux.Lock()
 		p.result = append(p.result, res)
@@ -64,5 +64,9 @@ func (p *Pool) worker(id int, tasks <-chan Task) {
 }
 
 func (p *Pool) GetResults() []models.Result {
-	return p.result
+	p.mux.Lock()
+	defer p.mux.Unlock()
+	result := make([]models.Result, len(p.result))
+	copy(result, p.result)
+	return result
 }

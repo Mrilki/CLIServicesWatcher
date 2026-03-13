@@ -32,7 +32,7 @@ func main() {
 	fmt.Println("Loading config...")
 	cfg, err := config.Load("cfg.json")
 	if err != nil {
-		log.Fatalf("Could not load config: %v\n", err)
+		log.Fatalf("Could not load config: %v", err)
 	}
 	fmt.Printf("Default timeout seconds: %d\n", cfg.Timeout)
 
@@ -45,7 +45,6 @@ func main() {
 	}
 	workersPool := worker.NewPool(workersCount, monitor)
 	workersPool.SetContext(ctx)
-
 	tasksChan := make(chan worker.Task, len(cfg.Targets))
 
 	go func() {
@@ -68,7 +67,7 @@ func main() {
 
 	if len(results) > 0 {
 		if err := reporter.SaveToJSON(results, "report.json"); err != nil {
-			log.Fatalf("Could not save results: %v\n", err)
+			log.Printf("Warning: could not save report: %v", err)
 		}
 		reporter.PrintStats(results)
 	} else {

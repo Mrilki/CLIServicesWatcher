@@ -60,10 +60,8 @@ func PrintStats(results []models.Result) {
 	for _, result := range results {
 		if result.Success {
 			successCount++
-			fmt.Printf("Success %s, %d, %v\n", result.Name, result.StatusCode, result.Latency)
-		} else {
-			fmt.Printf("Failure %s, %d, %v, Error: [%s]\n", result.Name, result.StatusCode, result.Latency, result.Error)
 		}
+		fmt.Println(result)
 	}
 	fmt.Printf("Total success: %d/%d", successCount, len(results))
 }
