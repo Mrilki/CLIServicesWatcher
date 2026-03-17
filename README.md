@@ -30,10 +30,22 @@ The program expects a `cfg.json` file in the working directory. The file should 
     - `type` – check type: `"http"`, `"tcp"`, or `"dns"`
     - `timeout` – optional custom timeout in seconds (overrides global)
 
+### flag
+
+- `-config`  Path to configuration file. Default: `cfg.json`
+- `-output`  Path to output report file. Default: `report.json`
+- `-workers` Maximum number of concurrent workers. Default: `10`
+
 ### Running
 
 ```bash
 git clone https://github.com/Mrilki/CLIServicesWatcher.git
-go run ./cmd/CLIServicesWatcher
+go build -o watcher ./cmd/CLIServicesWatcher
+
+# Windows PowerShell
+.\watcher.exe -config="cfg.json" -output="report.json" -workers=4
+
+# Linux/Mac
+./watcher -config=cfg.json -output=report.json -workers=4
 ```
 

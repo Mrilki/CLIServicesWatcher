@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -14,7 +15,15 @@ import (
 	"github.com/Mrilki/CLIServicesWatcher/internal/worker"
 )
 
+const defaultMaxWorkers = 10
+
 func main() {
+	numWorkers := flag.Int("workers", 0, "number of workers to use")
+	configPath := flag.String("config", "cfg.json", "path to config file")
+	outputPath := flag.String("output", "report.json", "path to output file")
+
+	flag.Parse()
+
 	fmt.Println("Starting...")
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -30,7 +39,7 @@ func main() {
 	}()
 
 	fmt.Println("Loading config...")
-	cfg, err := config.Load("cfg.json")
+	cfg, err := config.Load(*configPath)
 	if err != nil {
 		log.Fatalf("Could not load config: %v", err)
 	}
@@ -38,10 +47,14 @@ func main() {
 
 	factory := checker.NewCheckerFactory(cfg.GetTimeoutDuration())
 
-	workersCount := len(cfg.Targets)
-	if workersCount > 10 {
-		workersCount = 10
+	workersCount := *numWorkers
+	if workersCount <= 0 {
+		workersCount = min(len(cfg.Targets), defaultMaxWorkers)
+		fmt.Printf("Workers: %d (auto)\n", workersCount)
+	} else {
+		fmt.Printf("Workers: %d (manual)\n", workersCount)
 	}
+
 	workersPool := worker.NewPool(ctx, workersCount, factory)
 	tasksChan := make(chan worker.Task, len(cfg.Targets))
 
@@ -63,7 +76,7 @@ func main() {
 	results := workersPool.GetResults()
 
 	if len(results) > 0 {
-		if err := reporter.SaveToJSON(results, "report.json"); err != nil {
+		if err := reporter.SaveToJSON(results, *outputPath); err != nil {
 			log.Printf("Warning: could not save report: %v", err)
 		}
 		reporter.PrintStats(results)
