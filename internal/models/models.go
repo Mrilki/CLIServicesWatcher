@@ -7,37 +7,6 @@ import (
 	"time"
 )
 
-type Target struct {
-	Name    string `json:"name"`
-	URL     string `json:"url"`
-	Timeout *int   `json:"timeout,omitempty"`
-}
-
-func (target *Target) GetTimeoutDuration(globalTimeout time.Duration) time.Duration {
-	if target.Timeout == nil {
-		return globalTimeout
-	}
-	return time.Duration(*target.Timeout) * time.Second
-}
-
-type Result struct {
-	Name       string   `json:"name"`
-	URL        string   `json:"url"`
-	StatusCode int      `json:"status_code"`
-	Latency    Duration `json:"latency"`
-	Error      string   `json:"error,omitempty"`
-	Success    bool     `json:"success"`
-}
-
-func (result *Result) SetLatency(duration time.Duration) {
-	result.Latency = Duration(duration)
-}
-
-type Config struct {
-	Targets []Target `json:"targets"`
-	Timeout int      `json:"timeout"`
-}
-
 type Duration time.Duration
 
 func (d Duration) MarshalJSON() ([]byte, error) {
@@ -61,6 +30,72 @@ func (d Duration) String() string {
 	return time.Duration(d).String()
 }
 
+type CheckType string
+
+const (
+	CheckTypeTCP  CheckType = "tcp"
+	CheckTypeHTTP CheckType = "http"
+	CheckTypeDNS  CheckType = "dns"
+)
+
+func (c CheckType) IsValid() bool {
+	switch c {
+	case CheckTypeTCP, CheckTypeHTTP, CheckTypeDNS:
+		return true
+	default:
+		return false
+	}
+
+}
+
+type Target struct {
+	Name    string    `json:"name"`
+	Address string    `json:"address"`
+	Timeout *int      `json:"timeout,omitempty"`
+	Type    CheckType `json:"type"`
+}
+
+func (target *Target) GetType() CheckType {
+	return target.Type
+}
+
+func (target *Target) GetTimeoutDuration(globalTimeout time.Duration) time.Duration {
+	if target.Timeout == nil {
+		return globalTimeout
+	}
+	return time.Duration(*target.Timeout) * time.Second
+}
+
+type Result struct {
+	Name       string    `json:"name"`
+	Address    string    `json:"address"`
+	StatusCode *int      `json:"status_code,omitempty"`
+	Type       CheckType `json:"type"`
+	Latency    Duration  `json:"latency"`
+	Error      string    `json:"error,omitempty"`
+	Success    bool      `json:"success"`
+}
+
+func (result *Result) SetLatency(duration time.Duration) {
+	result.Latency = Duration(duration)
+}
+
+func (result Result) String() string {
+	statusStr := "n/a"
+	if result.StatusCode != nil {
+		statusStr = fmt.Sprintf("%d", *result.StatusCode)
+	}
+	if result.Success {
+		return fmt.Sprintf("Success, %s, %s, %s, %v", result.Type, result.Name, statusStr, result.Latency)
+	}
+	return fmt.Sprintf("Error, %s, %s, %s, %v, [%s]", result.Type, result.Name, statusStr, result.Latency, result.Error)
+}
+
+type Config struct {
+	Targets []Target `json:"targets"`
+	Timeout int      `json:"timeout"`
+}
+
 func (conf *Config) GetTimeoutDuration() time.Duration {
 	if conf.Timeout <= 0 {
 		return 10 * time.Second
@@ -74,28 +109,24 @@ func (conf *Config) Validate() error {
 	}
 	for i, target := range conf.Targets {
 		if target.Name == "" {
-			conf.Targets[i].Name = target.URL
+			conf.Targets[i].Name = target.Address
 		}
-		if target.URL == "" {
+		if target.Address == "" {
 			return fmt.Errorf("the target[%d].url is empty", i)
+		}
+		if !target.Type.IsValid() {
+			return fmt.Errorf("the target[%d].type is invalid: %s", i, target.Type)
 		}
 	}
 	return nil
-}
-
-func (result Result) String() string {
-	if result.Success {
-		return fmt.Sprintf("Success, %s, %d, %v", result.Name, result.StatusCode, result.Latency)
-	}
-	return fmt.Sprintf("Error, %s, %d, %v, [%s]", result.Name, result.StatusCode, result.Latency, result.Error)
 }
 
 func GetDefaultConf() *Config {
 	return &Config{
 		Timeout: 10,
 		Targets: []Target{
-			{Name: "Google", URL: "http://www.google.com"},
-			{Name: "Yandex", URL: "http://www.yandex.ru"},
+			{Name: "Google", Address: "http://www.google.com", Type: "http"},
+			{Name: "Yandex", Address: "http://www.yandex.ru", Type: "http"},
 		},
 	}
 }

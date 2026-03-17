@@ -1,20 +1,63 @@
 {
-  "targets" : [
+  "timeout": 5,
+  "targets": [
     {
-      "name": "Google",
-      "url": "https://google.com",
-      "timeout": 1
+      "name": "Example HTTP (should work)",
+      "address": "http://example.com",
+      "type": "http"
     },
     {
-      "name": "GitHub",
-      "url": "https://github.com",
-      "timeout": 1
+      "name": "Google DNS TCP (should work)",
+      "address": "8.8.8.8:53",
+      "type": "tcp"
     },
     {
-      "name": "NonExistent",
-      "url": "http://this-site-does-not-exist.com",
-      "timeout": 11
+      "name": "Cloudflare DNS TCP (custom timeout 2s, should work)",
+      "address": "1.1.1.1:53",
+      "type": "tcp",
+      "timeout": 2
+    },
+    {
+      "name": "TCP to invalid port (should fail - timeout, not RST, due to firewall filtering)",
+      "address": "8.8.8.8:9999",
+      "type": "tcp"
+    },
+    {
+      "name": "TCP to nonexistent host (should fail - DNS error at resolve stage)",
+      "address": "nonexistent.hostname.invalid:80",
+      "type": "tcp",
+      "timeout": 3
+    },
+    {
+      "name": "TCP to localhost closed port (should fail - connection refused)",
+      "address": "localhost:1",
+      "type": "tcp"
+    },
+    {
+      "name": "Google DNS lookup (should work)",
+      "address": "google.com",
+      "type": "dns"
+    },
+    {
+      "name": "DNS for existing domain (should work)",
+      "address": "github.com",
+      "type": "dns"
+    },
+    {
+      "name": "DNS for nonexistent domain (should fail - NXDOMAIN)",
+      "address": "this-domain-does-not-exist-123456789.com",
+      "type": "dns"
+    },
+    {
+      "name": "DNS with invalid TLD (should fail - no such host)",
+      "address": "example.invalidtld",
+      "type": "dns"
+    },
+    {
+      "name": "Failing HTTP (nonexistent domain, should fail - DNS error)",
+      "address": "http://nonexistent.domain.invalid",
+      "type": "http",
+      "timeout": 3
     }
-  ],
-  "timeout" : 10
+  ]
 }

@@ -36,15 +36,13 @@ func main() {
 	}
 	fmt.Printf("Default timeout seconds: %d\n", cfg.Timeout)
 
-	var monitor checker.Checker
-	monitor = checker.NewHttpChecker(cfg.GetTimeoutDuration())
+	factory := checker.NewCheckerFactory(cfg.GetTimeoutDuration())
 
 	workersCount := len(cfg.Targets)
 	if workersCount > 10 {
 		workersCount = 10
 	}
-	workersPool := worker.NewPool(workersCount, monitor)
-	workersPool.SetContext(ctx)
+	workersPool := worker.NewPool(ctx, workersCount, factory)
 	tasksChan := make(chan worker.Task, len(cfg.Targets))
 
 	go func() {
@@ -54,9 +52,8 @@ func main() {
 				fmt.Println("Stopped queuing new tasks.")
 				close(tasksChan)
 				return
-			default:
+			case tasksChan <- worker.Task{Target: target}:
 			}
-			tasksChan <- worker.Task{Target: target}
 		}
 		close(tasksChan)
 	}()

@@ -15,58 +15,57 @@ type Task struct {
 
 type Pool struct {
 	workersCount int
-	result       []models.Result
-	checker      checker.Checker
+	results      []models.Result
+	factory      *checker.Factory
 	mux          sync.Mutex
 	wg           sync.WaitGroup
 	ctx          context.Context
 }
 
-func NewPool(workersCount int, checker checker.Checker) *Pool {
+func NewPool(ctx context.Context, workersCount int, checkerFactory *checker.Factory) *Pool {
 	return &Pool{
 		workersCount: workersCount,
-		result:       make([]models.Result, 0),
-		checker:      checker,
-		ctx:          context.Background(),
+		results:      make([]models.Result, 0),
+		factory:      checkerFactory,
+		ctx:          ctx,
 	}
-}
-
-func (p *Pool) SetContext(ctx context.Context) {
-	p.ctx = ctx
 }
 
 func (p *Pool) Run(tasks <-chan Task) {
 	for i := 0; i < p.workersCount; i++ {
 		p.wg.Add(1)
-		go p.worker(i, tasks)
+		go p.worker(tasks)
 	}
 	p.wg.Wait()
 }
 
-func (p *Pool) worker(id int, tasks <-chan Task) {
+func (p *Pool) worker(tasks <-chan Task) {
 	defer p.wg.Done()
 
 	for task := range tasks {
-		select {
-		case <-p.ctx.Done():
-			return
-		default:
-
+		chkr, err := p.factory.New(task.Target.GetType())
+		var res models.Result
+		if err != nil {
+			res = models.Result{
+				Name:    task.Target.Name,
+				Address: task.Target.Address,
+				Success: false,
+				Error:   fmt.Sprintf("failed to create checker: %v", err),
+			}
+		} else {
+			res = chkr.Check(p.ctx, task.Target)
 		}
-		res := p.checker.Check(p.ctx, task.Target)
 
 		p.mux.Lock()
-		p.result = append(p.result, res)
+		p.results = append(p.results, res)
 		p.mux.Unlock()
-
-		fmt.Printf("[Worker %d] %s\n", id, task.Target.Name)
 	}
 }
 
 func (p *Pool) GetResults() []models.Result {
 	p.mux.Lock()
 	defer p.mux.Unlock()
-	result := make([]models.Result, len(p.result))
-	copy(result, p.result)
-	return result
+	results := make([]models.Result, len(p.results))
+	copy(results, p.results)
+	return results
 }
