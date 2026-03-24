@@ -17,7 +17,10 @@ response time and generates a report in JSON format.
 - Measures response time (latency) for each check
 - Handles graceful shutdown on Ctrl+C (finishes current checks, saves results)
 - Prints a summary table to the console
-- Saves a detailed JSON repor
+- Saves a detailed JSON report
+- Uses idiomatic Go error handling with sentinel errors and error wrapping
+- Implements panic recovery in all goroutines for crash protection
+
 
 ### Configuration file format
 
