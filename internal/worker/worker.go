@@ -3,6 +3,8 @@ package worker
 import (
 	"context"
 	"fmt"
+	"log"
+	"runtime/debug"
 	"sync"
 
 	"github.com/Mrilki/CLIServicesWatcher/internal/checker"
@@ -42,6 +44,13 @@ func (p *Pool) Run(tasks <-chan Task) {
 func (p *Pool) worker(tasks <-chan Task) {
 	defer p.wg.Done()
 
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("worker panicked: %v\nStack: %s",
+				r, debug.Stack())
+		}
+	}()
+
 	for task := range tasks {
 		chkr, err := p.factory.New(task.Target.GetType())
 		var res models.Result
@@ -49,11 +58,25 @@ func (p *Pool) worker(tasks <-chan Task) {
 			res = models.Result{
 				Name:    task.Target.Name,
 				Address: task.Target.Address,
+				Type:    task.Target.Type,
 				Success: false,
 				Error:   fmt.Sprintf("failed to create checker: %v", err),
 			}
 		} else {
-			res = chkr.Check(p.ctx, task.Target)
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						res = models.Result{
+							Name:    task.Target.Name,
+							Address: task.Target.Address,
+							Type:    task.Target.Type,
+							Success: false,
+							Error:   fmt.Sprintf("checker panicked: %v", r),
+						}
+					}
+				}()
+				res = chkr.Check(p.ctx, task.Target)
+			}()
 		}
 
 		p.mux.Lock()

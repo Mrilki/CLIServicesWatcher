@@ -33,6 +33,12 @@ func main() {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("signal handler panicked: %v", r)
+			}
+		}()
+
 		<-sigs
 		fmt.Println("\n Interrupt signal received. Shutting down gracefully...")
 		cancel()
@@ -59,6 +65,12 @@ func main() {
 	tasksChan := make(chan worker.Task, len(cfg.Targets))
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("task sender panicked: %v", r)
+			}
+		}()
+
 		for _, target := range cfg.Targets {
 			select {
 			case <-ctx.Done():
