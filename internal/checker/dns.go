@@ -42,9 +42,9 @@ func (c *DNSChecker) Check(ctx context.Context, target models.Target) models.Res
 	if err != nil {
 
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			result.Error = fmt.Sprintf("timeout after %v seconds", timeout)
+			result.Error = fmt.Sprintf("%s: timeout after %v", ErrTimeout, timeout)
 		} else {
-			result.Error = err.Error()
+			result.Error = fmt.Sprintf("%s: %v", ErrNetwork, err)
 		}
 	} else {
 		result.Success = true

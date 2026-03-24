@@ -42,14 +42,14 @@ func SaveToJSON(results []models.Result, fileName string) error {
 	file, err := os.Create(fileName)
 
 	if err != nil {
-		return fmt.Errorf("error creating report file: %w", err)
+		return fmt.Errorf("error creating report file %s: %w", fileName, err)
 	}
 
 	defer file.Close()
 	enc := json.NewEncoder(file)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(report); err != nil {
-		return fmt.Errorf("error encoding report file to JSON: %w", err)
+		return fmt.Errorf("error encoding report file %s: %w", fileName, err)
 	}
 	fmt.Printf("Report file saved to %s\n", fileName)
 	return nil

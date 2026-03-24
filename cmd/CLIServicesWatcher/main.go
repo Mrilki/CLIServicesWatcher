@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -47,6 +48,10 @@ func main() {
 	fmt.Println("Loading config...")
 	cfg, err := config.Load(*configPath)
 	if err != nil {
+		if errors.Is(err, config.ErrNotFound) {
+			fmt.Printf("Config file %s not found\nUse default config", *configPath)
+			cfg = config.GetDefaultConf()
+		}
 		log.Fatalf("Could not load config: %v", err)
 	}
 	fmt.Printf("Default timeout seconds: %d\n", cfg.Timeout)

@@ -26,7 +26,7 @@ func (f *Factory) New(checkType models.CheckType) (Checker, error) {
 	case models.CheckTypeHTTP:
 		return NewHTTPChecker(f.GlobalTimeout), nil
 	default:
-		return nil, fmt.Errorf("unknown checker type: %s", checkType)
+		return nil, fmt.Errorf("%w: got=%s", ErrUnknownType, checkType)
 	}
 
 }
