@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"github.com/Mrilki/CLIServicesWatcher/internal/models"
+	"github.com/fatih/color"
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 )
 
 type Report struct {
@@ -30,12 +33,19 @@ func SaveToJSON(results []models.Result, fileName string) error {
 	}
 	totalTargets := len(results)
 
+	var avgLatency string
+	if totalTargets > 0 {
+		avgLatency = (totalLatency / models.Duration(totalTargets)).String()
+	} else {
+		avgLatency = "0ms"
+	}
+
 	report := Report{
 		Timestamp:    time.Now().Format(time.RFC3339),
 		TotalTargets: totalTargets,
 		TotalSuccess: successCount,
 		TotalFail:    totalTargets - successCount,
-		AvgLatency:   fmt.Sprintf("%.2f", float32(totalLatency)/float32(totalTargets)),
+		AvgLatency:   avgLatency,
 		Results:      results,
 	}
 
@@ -57,11 +67,79 @@ func SaveToJSON(results []models.Result, fileName string) error {
 
 func PrintStats(results []models.Result) {
 	successCount := 0
+	var totalLatency models.Duration
+	totalTargets := len(results)
+
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("RESULTS")
+
+	t.AppendHeader(table.Row{
+		"Success",
+		"Type",
+		"Name",
+		"Code",
+		"Error",
+		"Latency",
+	})
 	for _, result := range results {
 		if result.Success {
 			successCount++
 		}
-		fmt.Println(result)
+		totalLatency += result.Latency
+
+		status := getStatusString(result.Success)
+
+		t.AppendRow(table.Row{
+			status,
+			result.Type,
+			result.Name,
+			getStatusCodeString(result.StatusCode),
+			result.Error,
+			result.Latency,
+		})
 	}
-	fmt.Printf("Total success: %d/%d", successCount, len(results))
+
+	var avgLatency string
+	if totalTargets > 0 {
+		avgLatency = (totalLatency / models.Duration(totalTargets)).String()
+	} else {
+		avgLatency = "0ms"
+	}
+
+	t.AppendFooter(table.Row{
+		fmt.Sprintf("Total success: %d/%d", successCount, totalTargets),
+		"",
+		"",
+		"",
+		"",
+		avgLatency,
+	})
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Name: "Success", WidthMax: 14},
+		{Name: "Name", WidthMax: 60, WidthMaxEnforcer: text.WrapText},
+		{Name: "Error", WidthMax: 90, WidthMaxEnforcer: text.WrapText},
+		{Name: "Type", WidthMax: 4},
+		{Name: "Code", WidthMax: 4},
+		{Name: "Latency", WidthMax: 10},
+	})
+
+	fmt.Println()
+	t.Render()
+	fmt.Println()
+}
+
+func getStatusString(success bool) string {
+	if success {
+		return color.New(color.FgGreen).SprintFunc()("OK")
+	}
+	return color.New(color.FgRed).SprintFunc()("FAIL")
+}
+
+func getStatusCodeString(statusCode *int) string {
+	if statusCode == nil {
+		return "N/A"
+	}
+	return fmt.Sprintf("%d", *statusCode)
 }

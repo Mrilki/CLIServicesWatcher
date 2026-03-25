@@ -47,9 +47,7 @@ func (c *HTTPChecker) Check(ctx context.Context, target models.Target) models.Re
 	resp, err := c.Client.Do(req)
 	latency := time.Since(start)
 	result.SetLatency(latency)
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			result.Error = fmt.Sprintf("%s: timeout after %v", ErrTimeout, timeout)
@@ -58,6 +56,7 @@ func (c *HTTPChecker) Check(ctx context.Context, target models.Target) models.Re
 		}
 		return result
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 		result.Success = true

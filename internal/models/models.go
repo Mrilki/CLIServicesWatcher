@@ -80,17 +80,6 @@ func (result *Result) SetLatency(duration time.Duration) {
 	result.Latency = Duration(duration)
 }
 
-func (result Result) String() string {
-	statusStr := "n/a"
-	if result.StatusCode != nil {
-		statusStr = fmt.Sprintf("%d", *result.StatusCode)
-	}
-	if result.Success {
-		return fmt.Sprintf("Success, %s, %s, %s, %v", result.Type, result.Name, statusStr, result.Latency)
-	}
-	return fmt.Sprintf("Error, %s, %s, %s, %v, [%s]", result.Type, result.Name, statusStr, result.Latency, result.Error)
-}
-
 type Config struct {
 	Targets []Target `json:"targets"`
 	Timeout int      `json:"timeout"`
@@ -112,7 +101,7 @@ func (conf *Config) Validate() error {
 			conf.Targets[i].Name = target.Address
 		}
 		if target.Address == "" {
-			return fmt.Errorf("the target[%d].url is empty", i)
+			return fmt.Errorf("the target[%d].address is empty", i)
 		}
 		if !target.Type.IsValid() {
 			return fmt.Errorf("the target[%d].type is invalid: %s", i, target.Type)

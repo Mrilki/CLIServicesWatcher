@@ -8,15 +8,10 @@ import (
 	"github.com/Mrilki/CLIServicesWatcher/internal/models"
 )
 
-func GetDefaultConf() *models.Config {
-	return models.GetDefaultConf()
-}
-
 func Load(path string) (*models.Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Printf("Config file %s not found\nUse default config", path)
 			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("%w: path=%s: %v", ErrRead, path, err)

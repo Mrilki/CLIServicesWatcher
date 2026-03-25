@@ -12,11 +12,10 @@ import (
 
 	"github.com/Mrilki/CLIServicesWatcher/internal/checker"
 	"github.com/Mrilki/CLIServicesWatcher/internal/config"
+	"github.com/Mrilki/CLIServicesWatcher/internal/models"
 	"github.com/Mrilki/CLIServicesWatcher/internal/reporter"
 	"github.com/Mrilki/CLIServicesWatcher/internal/worker"
 )
-
-const defaultMaxWorkers = 10
 
 func main() {
 	numWorkers := flag.Int("workers", 0, "number of workers to use")
@@ -41,18 +40,18 @@ func main() {
 		}()
 
 		<-sigs
-		fmt.Println("\n Interrupt signal received. Shutting down gracefully...")
+		fmt.Println("\nInterrupt signal received. Shutting down gracefully...")
 		cancel()
 	}()
 
-	fmt.Println("Loading config...")
 	cfg, err := config.Load(*configPath)
 	if err != nil {
 		if errors.Is(err, config.ErrNotFound) {
 			fmt.Printf("Config file %s not found\nUse default config", *configPath)
-			cfg = config.GetDefaultConf()
+			cfg = models.GetDefaultConf()
+		} else {
+			log.Fatalf("Could not load config: %v", err)
 		}
-		log.Fatalf("Could not load config: %v", err)
 	}
 	fmt.Printf("Default timeout seconds: %d\n", cfg.Timeout)
 
@@ -60,7 +59,7 @@ func main() {
 
 	workersCount := *numWorkers
 	if workersCount <= 0 {
-		workersCount = min(len(cfg.Targets), defaultMaxWorkers)
+		workersCount = min(len(cfg.Targets), worker.DefaultMaxWorkers)
 		fmt.Printf("Workers: %d (auto)\n", workersCount)
 	} else {
 		fmt.Printf("Workers: %d (manual)\n", workersCount)

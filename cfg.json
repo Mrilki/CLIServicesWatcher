@@ -2,59 +2,59 @@
   "timeout": 5,
   "targets": [
     {
-      "name": "Example HTTP (should work)",
+      "name": "Example HTTP",
       "address": "http://example.com",
       "type": "http"
     },
     {
-      "name": "Google DNS TCP (should work)",
+      "name": "Google DNS TCP",
       "address": "8.8.8.8:53",
       "type": "tcp"
     },
     {
-      "name": "Cloudflare DNS TCP (custom timeout 2s, should work)",
+      "name": "Cloudflare DNS TCP (custom timeout 2s)",
       "address": "1.1.1.1:53",
       "type": "tcp",
       "timeout": 2
     },
     {
-      "name": "TCP to invalid port (should fail - timeout, not RST, due to firewall filtering)",
+      "name": "TCP to invalid port (timeout)",
       "address": "8.8.8.8:9999",
       "type": "tcp"
     },
     {
-      "name": "TCP to nonexistent host (should fail - DNS error at resolve stage)",
+      "name": "TCP to nonexistent host",
       "address": "nonexistent.hostname.invalid:80",
       "type": "tcp",
       "timeout": 3
     },
     {
-      "name": "TCP to localhost closed port (should fail - connection refused)",
+      "name": "TCP to localhost closed port (connection refused)",
       "address": "localhost:1",
       "type": "tcp"
     },
     {
-      "name": "Google DNS lookup (should work)",
+      "name": "Google DNS lookup ",
       "address": "google.com",
       "type": "dns"
     },
     {
-      "name": "DNS for existing domain (should work)",
+      "name": "DNS for existing domain ",
       "address": "github.com",
       "type": "dns"
     },
     {
-      "name": "DNS for nonexistent domain (should fail - NXDOMAIN)",
+      "name": "DNS for nonexistent domain (NXDOMAIN)",
       "address": "this-domain-does-not-exist-123456789.com",
       "type": "dns"
     },
     {
-      "name": "DNS with invalid TLD (should fail - no such host)",
+      "name": "DNS with invalid TLD (no such host)",
       "address": "example.invalidtld",
       "type": "dns"
     },
     {
-      "name": "Failing HTTP (nonexistent domain, should fail - DNS error)",
+      "name": "Failing HTTP (nonexistent domain)",
       "address": "http://nonexistent.domain.invalid",
       "type": "http",
       "timeout": 3

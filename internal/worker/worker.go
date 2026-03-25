@@ -11,6 +11,8 @@ import (
 	"github.com/Mrilki/CLIServicesWatcher/internal/models"
 )
 
+const DefaultMaxWorkers = 10
+
 type Task struct {
 	Target models.Target
 }
