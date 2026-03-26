@@ -20,6 +20,7 @@ response time and generates a report in JSON format.
 - Uses idiomatic Go error handling with sentinel errors and error wrapping
 - Implements panic recovery in all goroutines for crash protection
 - Renders colored output table with go-pretty and fatih/color
+- Provides structured logging with slog (use --verbose for debug logs)
 
 ### Configuration file format
 
@@ -37,6 +38,7 @@ The program expects a `cfg.json` file in the working directory. The file should 
 - `-config`  Path to configuration file. Default: `cfg.json`
 - `-output`  Path to output report file. Default: `report.json`
 - `-workers` Maximum number of concurrent workers. Default: `10`
+- `-verbose` Enable debug logging. Default: `false`
 
 ### Running
 

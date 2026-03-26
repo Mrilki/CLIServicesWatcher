@@ -3,6 +3,7 @@ package reporter
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -21,7 +22,7 @@ type Report struct {
 	Results      []models.Result `json:"results"`
 }
 
-func SaveToJSON(results []models.Result, fileName string) error {
+func SaveToJSON(results []models.Result, fileName string, log *slog.Logger) error {
 	successCount := 0
 	var totalLatency models.Duration
 
@@ -48,7 +49,7 @@ func SaveToJSON(results []models.Result, fileName string) error {
 		AvgLatency:   avgLatency,
 		Results:      results,
 	}
-
+	log.Debug("Creating report file", "file_name", fileName, "targets", totalTargets)
 	file, err := os.Create(fileName)
 
 	if err != nil {
@@ -60,10 +61,11 @@ func SaveToJSON(results []models.Result, fileName string) error {
 	if err := enc.Encode(report); err != nil {
 		return fmt.Errorf("error encoding report file %s: %w", fileName, err)
 	}
-	fmt.Printf("Report file saved to %s\n", fileName)
+
 	if err := file.Close(); err != nil {
 		return fmt.Errorf("error closing report file %s: %w", fileName, err)
 	}
+	log.Info("Report saved", "file_name", fileName)
 	return nil
 }
 

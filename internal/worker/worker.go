@@ -3,7 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"runtime/debug"
 	"sync"
 
@@ -24,39 +24,60 @@ type Pool struct {
 	mux          sync.Mutex
 	wg           sync.WaitGroup
 	ctx          context.Context
+	log          *slog.Logger
 }
 
-func NewPool(ctx context.Context, workersCount int, checkerFactory *checker.Factory) *Pool {
+func NewPool(ctx context.Context, workersCount int, checkerFactory *checker.Factory, log *slog.Logger) *Pool {
 	return &Pool{
 		workersCount: workersCount,
 		results:      make([]models.Result, 0),
 		factory:      checkerFactory,
 		ctx:          ctx,
+		log:          log,
 	}
 }
 
 func (p *Pool) Run(tasks <-chan Task) {
 	for i := 0; i < p.workersCount; i++ {
 		p.wg.Add(1)
-		go p.worker(tasks)
+		go p.worker(i, tasks)
 	}
 	p.wg.Wait()
+
+	p.log.Info("Worker pool completed", "results", len(p.results))
 }
 
-func (p *Pool) worker(tasks <-chan Task) {
+func (p *Pool) worker(id int, tasks <-chan Task) {
 	defer p.wg.Done()
 
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("worker panicked: %v\nStack: %s",
-				r, debug.Stack())
+			p.log.Warn("Worker panicked",
+				"worker", id,
+				"error", r,
+				"stack", string(debug.Stack()))
 		}
 	}()
 
+	p.log.Debug("Worker started", "worker", id)
+
 	for task := range tasks {
+		p.log.Debug("Processing task",
+			"worker", id,
+			"target", task.Target.Name,
+			"type", task.Target.Type)
+
 		chkr, err := p.factory.New(task.Target.GetType())
 		var res models.Result
+
 		if err != nil {
+			p.log.Error("Failed to create checker",
+				"worker", id,
+				"target", task.Target.Name,
+				"type", task.Target.Type,
+				"error", err,
+			)
+
 			res = models.Result{
 				Name:    task.Target.Name,
 				Address: task.Target.Address,
@@ -68,6 +89,11 @@ func (p *Pool) worker(tasks <-chan Task) {
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
+						p.log.Warn("Checker panicked",
+							"worker", id,
+							"target", task.Target.Name,
+							"error", r,
+						)
 						res = models.Result{
 							Name:    task.Target.Name,
 							Address: task.Target.Address,
@@ -77,6 +103,12 @@ func (p *Pool) worker(tasks <-chan Task) {
 						}
 					}
 				}()
+				p.log.Debug("Running checker",
+					"worker", id,
+					"target", task.Target.Name,
+					"type", task.Target.Type,
+				)
+
 				res = chkr.Check(p.ctx, task.Target)
 			}()
 		}
@@ -84,7 +116,14 @@ func (p *Pool) worker(tasks <-chan Task) {
 		p.mux.Lock()
 		p.results = append(p.results, res)
 		p.mux.Unlock()
+
+		p.log.Debug("Task completed",
+			"worker", id,
+			"target", task.Target.Name,
+			"success", res.Success,
+		)
 	}
+	p.log.Debug("Worker finished", "worker", id)
 }
 
 func (p *Pool) GetResults() []models.Result {
