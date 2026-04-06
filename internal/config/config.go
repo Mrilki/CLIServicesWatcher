@@ -28,10 +28,12 @@ func Load(path string, log *slog.Logger) (*models.Config, error) {
 	}
 
 	log.Debug("Validating config file", "path", path)
-	err = cfg.Validate()
-	if err != nil {
+	if err = cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("%w: path=%s: %v", ErrValidate, path, err)
 	}
+	log.Debug("Normalizing config")
+	cfg.Normalize()
+
 	log.Info("Config loaded successfully",
 		"path", path,
 		"targets", len(cfg.Targets),

@@ -53,3 +53,19 @@ go build -o watcher ./cmd/CLIServicesWatcher
 ./watcher -config=cfg.json -output=report.json -workers=4
 ```
 
+### Testing
+
+This project follows Go testing best practices with unit and integration tests.
+
+### Run Tests
+
+```bash
+# All unit tests
+go test ./...
+
+# With integration tests
+go test -tags=integration ./...
+
+# With race detector
+go test -race -tags=integration ./...
+```

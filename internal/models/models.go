@@ -55,12 +55,8 @@ type Target struct {
 	Type    CheckType `json:"type"`
 }
 
-func (target *Target) GetType() CheckType {
-	return target.Type
-}
-
 func (target *Target) GetTimeoutDuration(globalTimeout time.Duration) time.Duration {
-	if target.Timeout == nil {
+	if target.Timeout == nil || *target.Timeout <= 0 {
 		return globalTimeout
 	}
 	return time.Duration(*target.Timeout) * time.Second
@@ -97,9 +93,6 @@ func (conf *Config) Validate() error {
 		return errors.New("the target list is empty")
 	}
 	for i, target := range conf.Targets {
-		if target.Name == "" {
-			conf.Targets[i].Name = target.Address
-		}
 		if target.Address == "" {
 			return fmt.Errorf("the target[%d].address is empty", i)
 		}
@@ -108,6 +101,13 @@ func (conf *Config) Validate() error {
 		}
 	}
 	return nil
+}
+func (conf *Config) Normalize() {
+	for i := range conf.Targets {
+		if conf.Targets[i].Name == "" {
+			conf.Targets[i].Name = conf.Targets[i].Address
+		}
+	}
 }
 
 func GetDefaultConf() *Config {

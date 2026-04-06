@@ -7,6 +7,10 @@ import (
 	"github.com/Mrilki/CLIServicesWatcher/internal/models"
 )
 
+type CheckFactory interface {
+	New(checkType models.CheckType) (Checker, error)
+}
+
 type Factory struct {
 	GlobalTimeout time.Duration
 }

@@ -1,0 +1,6 @@
+{
+  "timeout": 10,
+  "targets": [
+    {"name": "Google", "address": "http://google.com", "type": "http"}
+  ]
+}

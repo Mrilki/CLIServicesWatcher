@@ -2,8 +2,6 @@ package checker
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net"
 	"time"
 
@@ -27,7 +25,7 @@ func (c *DNSChecker) Check(ctx context.Context, target models.Target) models.Res
 		Name:    target.Name,
 		Address: target.Address,
 		Success: false,
-		Type:    target.GetType(),
+		Type:    target.Type,
 	}
 
 	timeout := target.GetTimeoutDuration(c.GlobalTimeout)
@@ -40,12 +38,7 @@ func (c *DNSChecker) Check(ctx context.Context, target models.Target) models.Res
 	latency := time.Since(start)
 	result.SetLatency(latency)
 	if err != nil {
-
-		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			result.Error = fmt.Sprintf("%s: timeout after %v", ErrTimeout, timeout)
-		} else {
-			result.Error = fmt.Sprintf("%s: %v", ErrNetwork, err)
-		}
+		result.Error = classifyError(err, timeout)
 	} else {
 		result.Success = true
 	}

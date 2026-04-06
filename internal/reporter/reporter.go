@@ -51,7 +51,11 @@ func SaveToJSON(results []models.Result, fileName string, log *slog.Logger) erro
 	}
 	log.Debug("Creating report file", "file_name", fileName, "targets", totalTargets)
 	file, err := os.Create(fileName)
-
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			log.Warn("Failed to close report file", "file", fileName, "error", closeErr)
+		}
+	}()
 	if err != nil {
 		return fmt.Errorf("error creating report file %s: %w", fileName, err)
 	}
@@ -62,9 +66,6 @@ func SaveToJSON(results []models.Result, fileName string, log *slog.Logger) erro
 		return fmt.Errorf("error encoding report file %s: %w", fileName, err)
 	}
 
-	if err := file.Close(); err != nil {
-		return fmt.Errorf("error closing report file %s: %w", fileName, err)
-	}
 	log.Info("Report saved", "file_name", fileName)
 	return nil
 }

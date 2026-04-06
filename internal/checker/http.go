@@ -2,7 +2,6 @@ package checker
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -15,10 +14,12 @@ type HTTPChecker struct {
 	GlobalTimeout time.Duration
 }
 
-func NewHTTPChecker(GlobalTimeout time.Duration) *HTTPChecker {
+func NewHTTPChecker(globalTimeout time.Duration) *HTTPChecker {
 	return &HTTPChecker{
-		Client:        &http.Client{},
-		GlobalTimeout: GlobalTimeout,
+		Client: &http.Client{
+			Timeout: globalTimeout,
+		},
+		GlobalTimeout: globalTimeout,
 	}
 }
 
@@ -27,7 +28,7 @@ func (c *HTTPChecker) Check(ctx context.Context, target models.Target) models.Re
 		Name:    target.Name,
 		Address: target.Address,
 		Success: false,
-		Type:    target.GetType(),
+		Type:    target.Type,
 	}
 
 	timeout := target.GetTimeoutDuration(c.GlobalTimeout)
@@ -49,11 +50,7 @@ func (c *HTTPChecker) Check(ctx context.Context, target models.Target) models.Re
 	result.SetLatency(latency)
 
 	if err != nil {
-		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			result.Error = fmt.Sprintf("%s: timeout after %v", ErrTimeout, timeout)
-		} else {
-			result.Error = fmt.Sprintf("%s: %v", ErrNetwork, err)
-		}
+		result.Error = classifyError(err, timeout)
 		return result
 	}
 	defer resp.Body.Close()

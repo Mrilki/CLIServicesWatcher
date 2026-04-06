@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/Mrilki/CLIServicesWatcher/internal/checker"
 	"github.com/Mrilki/CLIServicesWatcher/internal/config"
@@ -42,18 +43,6 @@ func main() {
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Warn("Signal handler panicked", "error", r)
-			}
-		}()
-
-		<-sigs
-		log.Info("Interrupt signal received. Shutting down gracefully...")
-		cancel()
-	}()
 
 	cfg, err := config.Load(*configPath, log)
 	if err != nil {
@@ -102,7 +91,27 @@ func main() {
 		close(tasksChan)
 	}()
 
-	workersPool.Run(tasksChan)
+	done := make(chan struct{})
+	go func() {
+		workersPool.Run(tasksChan)
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		log.Info("All targets checked successfully")
+	case sig := <-sigs:
+		log.Info("Received signal, shutting down...", "signal", sig)
+		cancel()
+
+		select {
+		case <-done:
+			log.Info("Workers finished gracefully")
+		case <-time.After(30 * time.Second):
+			log.Warn("Graceful shutdown timed out, forcing exit")
+			os.Exit(1)
+		}
+	}
 
 	results := workersPool.GetResults()
 

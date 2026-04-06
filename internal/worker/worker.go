@@ -20,14 +20,14 @@ type Task struct {
 type Pool struct {
 	workersCount int
 	results      []models.Result
-	factory      *checker.Factory
+	factory      checker.CheckFactory
 	mux          sync.Mutex
 	wg           sync.WaitGroup
 	ctx          context.Context
 	log          *slog.Logger
 }
 
-func NewPool(ctx context.Context, workersCount int, checkerFactory *checker.Factory, log *slog.Logger) *Pool {
+func NewPool(ctx context.Context, workersCount int, checkerFactory checker.CheckFactory, log *slog.Logger) *Pool {
 	return &Pool{
 		workersCount: workersCount,
 		results:      make([]models.Result, 0),
@@ -67,51 +67,43 @@ func (p *Pool) worker(id int, tasks <-chan Task) {
 			"target", task.Target.Name,
 			"type", task.Target.Type)
 
-		chkr, err := p.factory.New(task.Target.GetType())
-		var res models.Result
+		res := models.Result{
+			Name:    task.Target.Name,
+			Address: task.Target.Address,
+			Type:    task.Target.Type,
+			Success: false,
+		}
 
-		if err != nil {
-			p.log.Error("Failed to create checker",
-				"worker", id,
-				"target", task.Target.Name,
-				"type", task.Target.Type,
-				"error", err,
-			)
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					p.log.Warn("Checker panicked",
+						"worker", id,
+						"target", task.Target.Name,
+						"error", r,
+					)
+					res.Error = fmt.Sprintf("checker panicked: %v", r)
+				}
+			}()
 
-			res = models.Result{
-				Name:    task.Target.Name,
-				Address: task.Target.Address,
-				Type:    task.Target.Type,
-				Success: false,
-				Error:   fmt.Sprintf("failed to create checker: %v", err),
-			}
-		} else {
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						p.log.Warn("Checker panicked",
-							"worker", id,
-							"target", task.Target.Name,
-							"error", r,
-						)
-						res = models.Result{
-							Name:    task.Target.Name,
-							Address: task.Target.Address,
-							Type:    task.Target.Type,
-							Success: false,
-							Error:   fmt.Sprintf("checker panicked: %v", r),
-						}
-					}
-				}()
-				p.log.Debug("Running checker",
+			chkr, err := p.factory.New(task.Target.Type)
+			if err != nil {
+				p.log.Error("Failed to create checker",
 					"worker", id,
 					"target", task.Target.Name,
 					"type", task.Target.Type,
+					"error", err,
 				)
-
-				res = chkr.Check(p.ctx, task.Target)
-			}()
-		}
+				res.Error = fmt.Sprintf("failed to create checker: %v", err)
+				return
+			}
+			p.log.Debug("Running checker",
+				"worker", id,
+				"target", task.Target.Name,
+				"type", task.Target.Type,
+			)
+			res = chkr.Check(p.ctx, task.Target)
+		}()
 
 		p.mux.Lock()
 		p.results = append(p.results, res)
