@@ -53,6 +53,11 @@ go build -o watcher ./cmd/CLIServicesWatcher
 ./watcher -config=cfg.json -output=report.json -workers=4
 ```
 
+### Makefile
+Для удобства можно использовать цели `make`:
+- `make build` / `make run` / `make test` / `make lint` / `make clean` / `make help
+
+
 ### Testing
 
 This project follows Go testing best practices with unit and integration tests.
