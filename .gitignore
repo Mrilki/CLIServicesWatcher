@@ -7,5 +7,6 @@ vendor/
 .idea/
 
 report.json
+watcher
 
 *.local.json

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Mrilki/CLIServicesWatcher/internal/models"
@@ -130,9 +131,11 @@ func PrintStats(results []models.Result) {
 		{Name: "Latency", WidthMax: 10},
 	})
 
-	fmt.Println()
+	var buf strings.Builder
+	t.SetOutputMirror(&buf)
 	t.Render()
-	fmt.Println()
+
+	fmt.Println(buf.String())
 }
 
 func getStatusString(success bool) string {
