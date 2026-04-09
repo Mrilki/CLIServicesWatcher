@@ -16,8 +16,8 @@ func TestSaveToJSON(t *testing.T) {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
 	tmpPath := tmp.Name()
-	tmp.Close()
-	defer os.Remove(tmpPath)
+	tmp.Close()              //nolint:errcheck
+	defer os.Remove(tmpPath) //nolint:errcheck
 
 	results := []models.Result{
 		{

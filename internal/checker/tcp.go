@@ -42,7 +42,7 @@ func (c *TCPChecker) Check(ctx context.Context, target models.Target) models.Res
 		result.Error = classifyError(err, timeout)
 		return result
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	result.Success = true
 	return result
 }

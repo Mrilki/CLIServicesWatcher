@@ -68,4 +68,7 @@ go test -tags=integration ./...
 
 # With race detector
 go test -race -tags=integration ./...
+
+# Run linter (code quality checks)
+golangci-lint run
 ```
