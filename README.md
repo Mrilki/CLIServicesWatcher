@@ -54,7 +54,7 @@ go build -o watcher ./cmd/CLIServicesWatcher
 ```
 
 ### Makefile
-Для удобства можно использовать цели `make`:
+For convenience, you can use `make` targets:
 - `make build` / `make run` / `make test` / `make lint` / `make clean` / `make help
 
 
